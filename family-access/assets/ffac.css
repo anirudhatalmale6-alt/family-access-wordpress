@@ -1,0 +1,302 @@
+/*
+ * Front-end styles.
+ *
+ * Deliberately quiet: everything inherits the theme's font and colours through
+ * `currentColor` and CSS variables, so an Elementor restyle just works. Override
+ * any of the --ffac-* variables in Elementor > Site Settings > Custom CSS.
+ */
+
+.ffac-card,
+.ffac-menu {
+	--ffac-radius: 10px;
+	--ffac-border: rgba(0, 0, 0, .14);
+	--ffac-muted: rgba(0, 0, 0, .55);
+	--ffac-accent: #2d6cdf;
+	--ffac-locked-bg: rgba(0, 0, 0, .04);
+	--ffac-locked-fg: rgba(0, 0, 0, .35);
+	box-sizing: border-box;
+}
+
+.ffac-card *,
+.ffac-menu * {
+	box-sizing: border-box;
+}
+
+/* ------------------------------------------------------------------ cards */
+
+.ffac-card {
+	max-width: 560px;
+	margin: 0 auto;
+	padding: 28px;
+	border: 1px solid var(--ffac-border);
+	border-radius: var(--ffac-radius);
+	background: rgba(255, 255, 255, .75);
+}
+
+.ffac-register.ffac-card {
+	max-width: 760px;
+}
+
+.ffac-card__title {
+	margin: 0 0 18px;
+	font-size: 1.5em;
+	line-height: 1.2;
+}
+
+.ffac-welcome {
+	margin: 0 0 16px;
+}
+
+/* ----------------------------------------------------------------- fields */
+
+.ffac-field {
+	margin: 0 0 16px;
+}
+
+.ffac-field label {
+	display: block;
+	margin-bottom: 5px;
+	font-weight: 600;
+	font-size: .95em;
+}
+
+.ffac-field input[type="text"],
+.ffac-field input[type="email"],
+.ffac-field input[type="tel"],
+.ffac-field input[type="password"],
+.ffac-field textarea {
+	width: 100%;
+	padding: 11px 13px;
+	border: 1px solid var(--ffac-border);
+	border-radius: 6px;
+	font: inherit;
+	background: #fff;
+	color: inherit;
+}
+
+.ffac-field input:focus,
+.ffac-field textarea:focus {
+	outline: 2px solid var(--ffac-accent);
+	outline-offset: 1px;
+	border-color: var(--ffac-accent);
+}
+
+.ffac-hint,
+.ffac-note,
+.ffac-muted {
+	display: block;
+	margin-top: 5px;
+	font-size: .85em;
+	color: var(--ffac-muted);
+}
+
+.ffac-note {
+	margin: 14px 0;
+}
+
+.ffac-req {
+	color: #b3261e;
+}
+
+.ffac-grid-2 {
+	display: grid;
+	grid-template-columns: repeat(2, minmax(0, 1fr));
+	gap: 0 18px;
+}
+
+.ffac-field--wide {
+	grid-column: 1 / -1;
+}
+
+@media (max-width: 640px) {
+	.ffac-grid-2 {
+		grid-template-columns: 1fr;
+	}
+}
+
+/* Honeypot: off-screen, never focusable by a person. */
+.ffac-hp {
+	position: absolute !important;
+	left: -9999px !important;
+	top: auto;
+	width: 1px;
+	height: 1px;
+	overflow: hidden;
+}
+
+/* --------------------------------------------------------------- captcha */
+
+.ffac-captcha {
+	margin: 6px 0 18px;
+	padding: 16px;
+	border: 1px solid var(--ffac-border);
+	border-radius: 8px;
+	background: var(--ffac-locked-bg);
+}
+
+.ffac-check {
+	display: flex;
+	align-items: center;
+	gap: 10px;
+	font-weight: 600;
+}
+
+.ffac-field--sum {
+	margin: 14px 0 0;
+	max-width: 320px;
+}
+
+/* --------------------------------------------------------------- buttons */
+
+.ffac-btn {
+	display: inline-block;
+	padding: 12px 22px;
+	border: 0;
+	border-radius: 6px;
+	background: var(--ffac-accent);
+	color: #fff;
+	font: inherit;
+	font-weight: 600;
+	text-decoration: none;
+	cursor: pointer;
+}
+
+.ffac-btn:hover,
+.ffac-btn:focus {
+	filter: brightness(1.08);
+	color: #fff;
+}
+
+.ffac-btn--quiet {
+	background: transparent;
+	color: inherit;
+	border: 1px solid var(--ffac-border);
+}
+
+.ffac-actions {
+	display: flex;
+	align-items: center;
+	gap: 18px;
+	flex-wrap: wrap;
+	margin: 18px 0 0;
+}
+
+.ffac-alt {
+	margin: 16px 0 0;
+	font-size: .95em;
+}
+
+/* --------------------------------------------------------------- notices */
+
+.ffac-notice {
+	margin: 0 0 18px;
+	padding: 13px 16px;
+	border-radius: 8px;
+	border-left: 4px solid var(--ffac-accent);
+	background: rgba(45, 108, 223, .08);
+	font-size: .95em;
+}
+
+.ffac-notice ul {
+	margin: 0;
+	padding-left: 18px;
+}
+
+.ffac-notice--warn {
+	border-left-color: #c77700;
+	background: rgba(199, 119, 0, .1);
+}
+
+.ffac-notice--error {
+	border-left-color: #b3261e;
+	background: rgba(179, 38, 30, .09);
+}
+
+.ffac-notice--ok {
+	border-left-color: #2e7d32;
+	background: rgba(46, 125, 50, .1);
+}
+
+/* ------------------------------------------------------------- menu grid */
+
+.ffac-menu {
+	max-width: 1100px;
+	margin: 0 auto;
+}
+
+.ffac-menu__title {
+	margin: 0 0 20px;
+}
+
+.ffac-menu__grid {
+	display: grid;
+	grid-template-columns: repeat(var(--ffac-cols, 4), minmax(0, 1fr));
+	gap: 18px;
+}
+
+@media (max-width: 900px) {
+	.ffac-menu__grid {
+		grid-template-columns: repeat(3, minmax(0, 1fr));
+	}
+}
+
+@media (max-width: 600px) {
+	.ffac-menu__grid {
+		grid-template-columns: repeat(2, minmax(0, 1fr));
+	}
+}
+
+.ffac-tile {
+	display: flex;
+	flex-direction: column;
+	justify-content: center;
+	gap: 6px;
+	min-height: 116px;
+	padding: 18px;
+	border: 1px solid var(--ffac-border);
+	border-radius: var(--ffac-radius);
+	text-align: center;
+	text-decoration: none;
+	transition: transform .12s ease, box-shadow .12s ease;
+}
+
+.ffac-tile__code {
+	font-weight: 700;
+	font-size: 1.2em;
+	letter-spacing: .02em;
+}
+
+.ffac-tile__label {
+	font-size: .9em;
+	opacity: .8;
+	overflow-wrap: anywhere;
+}
+
+.ffac-tile--open {
+	background: #fff;
+	color: inherit;
+	box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
+}
+
+.ffac-tile--open:hover,
+.ffac-tile--open:focus {
+	transform: translateY(-2px);
+	box-shadow: 0 6px 18px rgba(0, 0, 0, .12);
+	border-color: var(--ffac-accent);
+	color: inherit;
+}
+
+/* The greyed out state. Not a link, not focusable, nothing happens on click. */
+.ffac-tile--locked {
+	background: var(--ffac-locked-bg);
+	color: var(--ffac-locked-fg);
+	cursor: not-allowed;
+	user-select: none;
+	pointer-events: none;
+	border-style: dashed;
+}
+
+.ffac-greeting {
+	display: inline-block;
+	margin-right: 12px;
+}

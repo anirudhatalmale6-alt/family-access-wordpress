@@ -1,0 +1,131 @@
+"""Session rules and the admin approval screen, tested for real."""
+import subprocess
+import sys
+from playwright.sync_api import sync_playwright
+
+BASE = "http://127.0.0.1:8710"
+WP = "/var/lib/freelancer/projects/40710857/fam-wp"
+SHOTS = "/var/lib/freelancer/projects/40710857/shots"
+results = []
+
+
+def check(name, condition, detail=""):
+    results.append((name, bool(condition)))
+    print(("PASS  " if condition else "FAIL  ") + name + ("  " + detail if detail else ""))
+
+
+def php(code):
+    script = f"<?php require_once '{WP}/wp-load.php'; {code}"
+    open("/tmp/claude-1003/-home-freelancer/5193697f-1c78-47c7-8366-425e5da068bc/scratchpad/_t.php", "w").write(script)
+    out = subprocess.run(["php", "/tmp/claude-1003/-home-freelancer/5193697f-1c78-47c7-8366-425e5da068bc/scratchpad/_t.php"],
+                         capture_output=True, text=True)
+    return (out.stdout + out.stderr).strip()
+
+
+def member_login(page, user, password="FamilyTest!2026"):
+    page.goto(f"{BASE}/login/", wait_until="domcontentloaded")
+    page.fill("#ffac-login-username", user)
+    page.fill("#ffac-login-password", password)
+    page.click("button[type=submit]")
+    page.wait_for_load_state("domcontentloaded")
+
+
+with sync_playwright() as p:
+    browser = p.chromium.launch()
+    ctx = browser.new_context(viewport={"width": 1280, "height": 800})
+    page = ctx.new_page()
+
+    # --- leaving the site ----------------------------------------------------
+    member_login(page, "janet")
+    check("signed in", "/members-menu/" in page.url, page.url)
+
+    # Moving around inside the site must NOT sign anyone out.
+    page.click(".ffac-tile--open")
+    page.wait_for_load_state("domcontentloaded")
+    page.go_back()
+    page.wait_for_load_state("domcontentloaded")
+    page.goto(f"{BASE}/members-menu/", wait_until="domcontentloaded")
+    check("moving between pages keeps the session", "/members-menu/" in page.url, page.url)
+
+    # Now do exactly what the browser does when the member leaves the site.
+    page.evaluate("""() => {
+        const body = new URLSearchParams();
+        body.set('action', 'ffac_leave');
+        body.set('nonce', window.ffacSession.nonce);
+        return fetch(window.ffacSession.ajaxUrl, {
+            method: 'POST', credentials: 'same-origin',
+            headers: {'Content-Type': 'application/x-www-form-urlencoded;charset=UTF-8'},
+            body: body.toString()
+        }).then(r => r.status);
+    }""")
+    page.wait_for_timeout(4000)
+    page.goto(f"{BASE}/members-menu/", wait_until="domcontentloaded")
+    check("leaving the site signs the member out", "ffac=left" in page.url or "/login/" in page.url, page.url)
+    check("told why they were signed out", "when you left the site" in page.content(), "")
+    page.screenshot(path=f"{SHOTS}/10-left-site.png")
+
+    # --- idle timeout --------------------------------------------------------
+    member_login(page, "janet")
+    check("signed in again", "/members-menu/" in page.url, page.url)
+    php("$u = get_user_by('login','janet'); "
+        "update_user_meta($u->ID, FFAC_Session::META_SEEN, time() - 3600); "
+        "delete_user_meta($u->ID, FFAC_Session::META_LEFT); echo 'aged';")
+    page.goto(f"{BASE}/page-01/", wait_until="domcontentloaded")
+    check("idle session is dropped", "ffac=timeout" in page.url, page.url)
+    check("idle message shown", "left idle" in page.content())
+    page.screenshot(path=f"{SHOTS}/11-idle-timeout.png")
+
+    # --- the admin approving somebody ---------------------------------------
+    admin = browser.new_context(viewport={"width": 1280, "height": 800})
+    apage = admin.new_page()
+    apage.goto(f"{BASE}/wp-login.php", wait_until="domcontentloaded")
+    apage.fill("#user_login", "famadmin")
+    apage.fill("#user_pass", "FamAdmin!2026demo")
+    apage.click("#wp-submit")
+    apage.wait_for_load_state("domcontentloaded")
+    check("admin signed in", "/wp-admin/" in apage.url, apage.url)
+
+    apage.goto(f"{BASE}/wp-admin/admin.php?page=ffac-members", wait_until="domcontentloaded")
+    check("member access screen loads", apage.locator("table.ffac-grid").count() == 1)
+    check("the new registration is listed", "samtaylor" in apage.content())
+    apage.screenshot(path=f"{SHOTS}/12-admin-members.png")
+
+    uid = php("$u = get_user_by('login','samtaylor'); echo $u ? $u->ID : 0;")
+    apage.select_option(f"select[name='ffac_user[{uid}][status]']", "approved")
+    apage.check(f"input[name='ffac_user[{uid}][slots][]'][value='2']")
+    apage.check(f"input[name='ffac_user[{uid}][slots][]'][value='4']")
+    apage.click("button.button-primary")
+    apage.wait_for_load_state("domcontentloaded")
+    check("access saved", "Saved." in apage.content(), apage.url)
+    apage.screenshot(path=f"{SHOTS}/13-admin-saved.png")
+
+    stored = php(f"echo implode(',', FFAC_Access::allowed_slots({uid}));")
+    check("the ticks were stored", stored == "2,4", stored)
+
+    # --- and the member immediately sees exactly that -----------------------
+    ctx3 = browser.new_context(viewport={"width": 1280, "height": 800})
+    page3 = ctx3.new_page()
+    member_login(page3, "samtaylor", "TestPass!2026")
+    check("approved member can now sign in", "/members-menu/" in page3.url, page3.url)
+    codes = [t.inner_text().split("\n")[0] for t in page3.locator(".ffac-tile--open").all()]
+    check("they see exactly the two pages ticked", codes == ["Page-02", "Page-04"], str(codes))
+    page3.screenshot(path=f"{SHOTS}/14-new-member-menu.png")
+
+    page3.goto(f"{BASE}/page-01/", wait_until="domcontentloaded")
+    check("and nothing else", "ffac=denied" in page3.url, page3.url)
+
+    # --- the admin help screen ----------------------------------------------
+    apage.goto(f"{BASE}/wp-admin/admin.php?page=ffac-help", wait_until="domcontentloaded")
+    check("instructions screen loads", "How to use Family Access" in apage.content())
+    apage.screenshot(path=f"{SHOTS}/15-admin-help.png")
+
+    apage.goto(f"{BASE}/wp-admin/admin.php?page=ffac-settings", wait_until="domcontentloaded")
+    apage.screenshot(path=f"{SHOTS}/16-admin-settings.png")
+    apage.goto(f"{BASE}/wp-admin/admin.php?page=ffac-pages", wait_until="domcontentloaded")
+    apage.screenshot(path=f"{SHOTS}/17-admin-pages.png")
+
+    browser.close()
+
+failed = [r for r in results if not r[1]]
+print(f"\n{len(results) - len(failed)}/{len(results)} checks passed")
+sys.exit(1 if failed else 0)

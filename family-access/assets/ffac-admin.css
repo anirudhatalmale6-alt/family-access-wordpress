@@ -1,0 +1,79 @@
+/* Admin screens. */
+
+.ffac-wrap .ffac-lede {
+	max-width: 760px;
+	font-size: 14px;
+}
+
+.ffac-muted {
+	color: #646970;
+	font-size: 12px;
+}
+
+.ffac-grid th,
+.ffac-grid td {
+	vertical-align: middle;
+}
+
+.ffac-col-slot {
+	width: 34px;
+	text-align: center !important;
+	padding-left: 0 !important;
+	padding-right: 0 !important;
+}
+
+.ffac-col-person {
+	min-width: 230px;
+}
+
+.ffac-col-status {
+	width: 120px;
+}
+
+.ffac-col-all {
+	width: 70px;
+	text-align: center !important;
+}
+
+.ffac-grid thead th.ffac-col-slot {
+	font-variant-numeric: tabular-nums;
+}
+
+.ffac-user-slots label {
+	display: inline-block;
+	width: 220px;
+	margin: 0 0 8px;
+}
+
+.ffac-help {
+	max-width: 860px;
+}
+
+.ffac-help h2 {
+	margin-top: 2em;
+	padding-top: .6em;
+	border-top: 1px solid #dcdcde;
+}
+
+.ffac-help ol,
+.ffac-help ul {
+	margin-left: 1.4em;
+	list-style: revert;
+}
+
+.ffac-help li {
+	margin-bottom: .5em;
+}
+
+.ffac-help code {
+	background: #f0f0f1;
+	padding: 2px 6px;
+	border-radius: 3px;
+}
+
+.ffac-help .ffac-callout {
+	border-left: 4px solid #2271b1;
+	background: #f6f7f7;
+	padding: 12px 16px;
+	margin: 1em 0;
+}
