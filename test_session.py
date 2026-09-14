@@ -1,5 +1,6 @@
 """Session rules and the admin approval screen, tested for real."""
 import subprocess
+import urllib.request
 import sys
 from playwright.sync_api import sync_playwright
 
@@ -113,6 +114,22 @@ with sync_playwright() as p:
 
     page3.goto(f"{BASE}/page-01/", wait_until="domcontentloaded")
     check("and nothing else", "ffac=denied" in page3.url, page3.url)
+
+    # --- search engines ------------------------------------------------------
+    # Fetched raw, not through the browser: Chromium applies the XSL stylesheet
+    # and the rendered DOM is not what a search engine reads.
+    sitemap = urllib.request.urlopen(f"{BASE}/wp-sitemap-posts-page-1.xml").read().decode()
+    check("member pages kept out of the XML sitemap",
+          "/page-01/" not in sitemap and "/members-menu/" not in sitemap,
+          "leaked" if "/page-01/" in sitemap else "clean")
+    check("public pages still in the sitemap", "/about/" in sitemap and "/contact/" in sitemap)
+
+    page3.goto(f"{BASE}/page-02/", wait_until="domcontentloaded")
+    check("member page tells search engines not to index it",
+          'name="robots" content="noindex, nofollow"' in page3.content(), page3.url)
+    page3.goto(f"{BASE}/about/", wait_until="domcontentloaded")
+    check("a public page is left indexable",
+          'name="robots" content="noindex, nofollow"' not in page3.content())
 
     # --- the admin help screen ----------------------------------------------
     apage.goto(f"{BASE}/wp-admin/admin.php?page=ffac-help", wait_until="domcontentloaded")

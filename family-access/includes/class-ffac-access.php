@@ -23,6 +23,12 @@ class FFAC_Access {
 		// Block themes build their navigation from get_pages(), which ignores the
 		// menu filter above. Without this the page titles leak into the header.
 		add_filter( 'get_pages', array( __CLASS__, 'filter_page_list' ) );
+
+		// Keep the member pages out of the XML sitemap and out of search engines.
+		// WordPress publishes every page in /wp-sitemap.xml by default, which would
+		// hand Google the address of all twelve.
+		add_filter( 'wp_sitemaps_posts_query_args', array( __CLASS__, 'filter_sitemap' ), 10, 2 );
+		add_action( 'wp_head', array( __CLASS__, 'noindex_member_pages' ), 1 );
 	}
 
 	/**
@@ -171,6 +177,49 @@ class FFAC_Access {
 		}
 
 		return array_values( $items );
+	}
+
+	/**
+	 * Every protected page, plus the members menu, comes out of the XML sitemap.
+	 * This one is not about the visitor in front of us — a sitemap is read by
+	 * search engines, so the exclusion is unconditional.
+	 */
+	public static function filter_sitemap( $args, $post_type ) {
+		if ( 'page' !== $post_type ) {
+			return $args;
+		}
+
+		$exclude = FFAC_Pages::protected_ids();
+		$menu_id = (int) FFAC_Settings::get( 'menu_page' );
+		if ( $menu_id ) {
+			$exclude[] = $menu_id;
+		}
+
+		if ( $exclude ) {
+			$args['post__not_in'] = array_merge(
+				isset( $args['post__not_in'] ) ? (array) $args['post__not_in'] : array(),
+				$exclude
+			);
+		}
+
+		return $args;
+	}
+
+	/**
+	 * Belt and braces: tell search engines not to index a member page even if
+	 * they somehow arrive at one.
+	 */
+	public static function noindex_member_pages() {
+		if ( ! is_singular( 'page' ) ) {
+			return;
+		}
+
+		$page_id = get_queried_object_id();
+		$menu_id = (int) FFAC_Settings::get( 'menu_page' );
+
+		if ( FFAC_Pages::slot_for_page( $page_id ) || ( $menu_id && $page_id === $menu_id ) ) {
+			echo '<meta name="robots" content="noindex, nofollow" />' . "\n";
+		}
 	}
 
 	/**

@@ -11,7 +11,7 @@ Elementor's way. Every page it touches is an ordinary page you can rebuild in th
   and completely inert.
 - **The tick boxes are the real gate.** Typing the URL of a page you are not allowed sends
   you back to the menu with an explanation. The page title is also kept out of the site
-  search and the navigation.
+  search, the navigation, and the XML sitemap, and the member pages carry `noindex`.
 - **Registration** with the usual fields and a not-a-robot check — a tick box and a small
   sum out of the box, Google reCAPTCHA v2 if you would rather.
 - **Approval queue.** A new sign-up cannot log in until the owner approves it, and starts
@@ -79,6 +79,10 @@ Elementor active.
 
 ## Tests
 
-`test_flow.py` and `test_session.py` in the project root drive a real browser through
-the whole thing — 47 checks covering the guard, the greyed tiles, the robot check, the
-approval queue, the idle timeout and the leave-the-site logout.
+`test_flow.py` and `test_session.py` drive a real browser through the whole thing — 51
+checks covering the guard, the greyed tiles, the robot check, the approval queue, the idle
+timeout, the leave-the-site logout, and the sitemap/noindex handling.
+
+Run them with `run-tests.sh`, not individually: `test_flow.py` registers an account through
+the public form that `test_session.py` then approves from the admin screen, and the reset
+step clears that account and the login lockout counters first.
