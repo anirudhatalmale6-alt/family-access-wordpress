@@ -15,6 +15,7 @@ class FFAC_Access {
 
 	public static function init() {
 		add_action( 'template_redirect', array( __CLASS__, 'guard' ), 1 );
+		add_action( 'template_redirect', array( __CLASS__, 'never_cache' ), 0 );
 
 		// Keep protected pages out of search results and menus for people who cannot open them.
 		add_action( 'pre_get_posts', array( __CLASS__, 'filter_search' ) );
@@ -85,6 +86,56 @@ class FFAC_Access {
 	public static function is_manager( $user_id ) {
 		$user = get_userdata( $user_id );
 		return $user && ( user_can( $user, 'manage_options' ) || user_can( $user, 'edit_pages' ) );
+	}
+
+	/**
+	 * Keep the members area away from any page cache.
+	 *
+	 * This matters more than it sounds. A caching plugin stores the HTML of a page
+	 * and hands the same copy to the next visitor. Two ways that breaks this site:
+	 *
+	 *   - the login and register forms carry a one-time security token. Serve a
+	 *     stored copy of that page a day later and the token is stale, so every
+	 *     sign-in fails with "your form session had expired" and nobody can get in;
+	 *   - a members page cached while somebody was signed in could be handed
+	 *     straight to a stranger, which would defeat the whole point.
+	 *
+	 * DONOTCACHEPAGE is the flag the cache plugins agree on — SpeedyCache, WP
+	 * Rocket, W3 Total Cache, LiteSpeed and others all honour it — so this works
+	 * whichever one the site ends up using.
+	 */
+	public static function never_cache() {
+		if ( is_admin() ) {
+			return;
+		}
+
+		$sensitive = is_user_logged_in();
+
+		if ( ! $sensitive && is_singular( 'page' ) ) {
+			$page_id = get_queried_object_id();
+			$special = array_filter(
+				array(
+					(int) FFAC_Settings::get( 'menu_page' ),
+					(int) FFAC_Settings::get( 'login_page' ),
+					(int) FFAC_Settings::get( 'register_page' ),
+				)
+			);
+			$sensitive = FFAC_Pages::slot_for_page( $page_id ) || in_array( $page_id, $special, true );
+		}
+
+		if ( ! $sensitive ) {
+			return;
+		}
+
+		if ( ! defined( 'DONOTCACHEPAGE' ) ) {
+			define( 'DONOTCACHEPAGE', true );
+		}
+		if ( ! defined( 'DONOTCACHEOBJECT' ) ) {
+			define( 'DONOTCACHEOBJECT', true );
+		}
+		if ( ! headers_sent() ) {
+			nocache_headers();
+		}
 	}
 
 	/**

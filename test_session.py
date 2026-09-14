@@ -95,7 +95,14 @@ with sync_playwright() as p:
         apage.wait_for_selector("table.ffac-grid", timeout=20000)
     except Exception:
         pass
-    check("member access screen loads", apage.locator("table.ffac-grid").count() == 1)
+    loaded = apage.locator("table.ffac-grid").count() == 1
+    if not loaded:
+        # Keep the evidence. This has failed on the first run after a plugin file
+        # edit under the PHP built-in server and passed on every run after, which
+        # smells like a stale opcode cache rather than a fault in the page.
+        open("/tmp/ffac-admin-screen-failure.html", "w").write(apage.content())
+        print("      (page body written to /tmp/ffac-admin-screen-failure.html)")
+    check("member access screen loads", loaded)
     check("the new registration is listed", "samtaylor" in apage.content())
     apage.screenshot(path=f"{SHOTS}/12-admin-members.png")
 
@@ -138,6 +145,23 @@ with sync_playwright() as p:
     page3.goto(f"{BASE}/about/", wait_until="domcontentloaded")
     check("a public page is left indexable",
           'name="robots" content="noindex, nofollow"' not in page3.content())
+
+    # --- page caching ---------------------------------------------------------
+    # A cached login page eventually serves a stale security token and nobody can
+    # sign in, so these pages must tell any cache plugin to leave them alone.
+    def cache_header(path):
+        req = urllib.request.Request(f"{BASE}{path}", headers={"User-Agent": "Mozilla/5.0"})
+        try:
+            return urllib.request.urlopen(req).headers.get("Cache-Control", "")
+        except urllib.error.HTTPError as e:
+            return e.headers.get("Cache-Control", "")
+
+    for path, label in [("/login/", "login"), ("/register/", "register")]:
+        cc = cache_header(path)
+        check(f"{label} page asks not to be cached", "no-store" in cc or "no-cache" in cc, cc or "(no header)")
+
+    check("a public page is still cacheable",
+          "no-store" not in cache_header("/about/"), cache_header("/about/") or "(no header)")
 
     # --- username enumeration ------------------------------------------------
     anon = browser.new_context(viewport={"width": 1280, "height": 800})
