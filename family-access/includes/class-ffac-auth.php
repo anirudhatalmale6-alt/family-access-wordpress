@@ -20,6 +20,67 @@ class FFAC_Auth {
 
 		// After a normal wp-login.php sign-in, members still land on their menu page.
 		add_filter( 'login_redirect', array( __CLASS__, 'login_redirect' ), 10, 3 );
+
+		if ( FFAC_Settings::get( 'harden_login' ) ) {
+			self::harden();
+		}
+	}
+
+	/**
+	 * Stop WordPress handing out the usernames on the site.
+	 *
+	 * Out of the box, /wp-json/wp/v2/users and /?author=1 will both tell anyone who
+	 * asks what the administrator is called. That is half of a username-and-password
+	 * pair given away for free, and it is the first thing an automated attack asks for.
+	 */
+	protected static function harden() {
+		// The REST users endpoint, for anyone not signed in.
+		add_filter(
+			'rest_endpoints',
+			function ( $endpoints ) {
+				if ( is_user_logged_in() ) {
+					return $endpoints;
+				}
+				foreach ( array( '/wp/v2/users', '/wp/v2/users/(?P<id>[\d]+)' ) as $route ) {
+					unset( $endpoints[ $route ] );
+				}
+				return $endpoints;
+			}
+		);
+
+		// /?author=1 redirecting to /author/admin/ gives the same thing away.
+		add_action(
+			'template_redirect',
+			function () {
+				if ( is_user_logged_in() || is_admin() ) {
+					return;
+				}
+				if ( isset( $_GET['author'] ) || is_author() ) {
+					wp_safe_redirect( home_url( '/' ), 301 );
+					exit;
+				}
+			},
+			0
+		);
+
+		// And the author pages listed in the sitemap.
+		add_filter(
+			'wp_sitemaps_add_provider',
+			function ( $provider, $name ) {
+				return 'users' === $name ? false : $provider;
+			},
+			10,
+			2
+		);
+
+		// wp-login.php says "the password you entered for the username X is
+		// incorrect", which confirms X exists. One vague answer instead.
+		add_filter(
+			'login_errors',
+			function () {
+				return 'That username and password did not match. Please try again.';
+			}
+		);
 	}
 
 	public static function handle_login() {

@@ -99,18 +99,33 @@ To use Google reCAPTCHA v2 instead:
 A hidden trap field and a minimum fill-in time run either way and catch most automated
 sign-ups on their own.
 
-## 8. Things worth knowing
+## 8. Usernames
+
+WordPress, left alone, publishes the list of usernames on your site at
+`/wp-json/wp/v2/users` and at `/?author=1`. Anyone can read it. That hands an attacker
+half of every login before they start guessing.
+
+The **Usernames** tick box in Settings (on by default) closes both of those, hides the
+author archive pages, and stops the WordPress login screen confirming whether a username
+exists. Turn it off only if something you rely on stops working.
+
+If your administrator account is literally called `admin`, change it. The safest way is to
+create a second administrator with a different name, log in as that one, and delete the
+old `admin` account, assigning its content to the new one.
+
+## 9. Things worth knowing
 
 - Administrators and editors always see all twelve pages. You cannot lock yourself out.
 - Members cannot reach the WordPress dashboard; if they try they are sent back to their menu.
-- A page a member may not open is also kept out of the site search and out of the site
-  navigation, so the titles do not leak.
+- A page a member may not open is also kept out of the site search, the site navigation
+  and the XML sitemap, so the titles never leak. The member pages also carry a `noindex`
+  tag, so they stay out of Google even if somebody shares a link.
 - Five wrong passwords pauses that username for fifteen minutes. "Waiting for approval"
   does not count as a wrong password.
 - Deleting one of the twelve pages empties its slot rather than quietly pointing at
   whatever page takes over the ID.
 
-## 9. If something looks wrong
+## 10. If something looks wrong
 
 | What you see | What it usually is |
 |---|---|

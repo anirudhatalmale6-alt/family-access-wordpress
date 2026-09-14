@@ -99,6 +99,7 @@ class FFAC_Admin {
 						'logout_on_leave'   => empty( $post['logout_on_leave'] ) ? 0 : 1,
 						'remember_username' => empty( $post['remember_username'] ) ? 0 : 1,
 						'require_approval'  => empty( $post['require_approval'] ) ? 0 : 1,
+						'harden_login'      => empty( $post['harden_login'] ) ? 0 : 1,
 						'captcha_mode'      => in_array( $post['captcha_mode'] ?? '', array( 'builtin', 'recaptcha', 'off' ), true ) ? $post['captcha_mode'] : 'builtin',
 						'recaptcha_site'    => sanitize_text_field( $post['recaptcha_site'] ?? '' ),
 						'recaptcha_secret'  => sanitize_text_field( $post['recaptcha_secret'] ?? '' ),
@@ -369,6 +370,18 @@ class FFAC_Admin {
 							<label><input type="checkbox" name="require_approval" value="1" <?php checked( $s['require_approval'] ); ?>>
 								Must be approved by me before they can sign in</label>
 							<p class="description">Strongly recommended. Without it anyone who finds the register page can create a working account.</p>
+						</td>
+					</tr>
+					<tr>
+						<th scope="row">Usernames</th>
+						<td>
+							<label><input type="checkbox" name="harden_login" value="1" <?php checked( $s['harden_login'] ); ?>>
+								Stop WordPress telling the world what the usernames are</label>
+							<p class="description">
+								Out of the box WordPress publishes them at /wp-json/wp/v2/users and /?author=1, which
+								hands an attacker half of every login. This closes both, hides the author pages, and
+								stops the WordPress login screen confirming that a username exists.
+							</p>
 						</td>
 					</tr>
 					<tr>

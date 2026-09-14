@@ -1,5 +1,6 @@
 """Session rules and the admin approval screen, tested for real."""
 import subprocess
+import urllib.error
 import urllib.request
 import sys
 from playwright.sync_api import sync_playwright
@@ -130,6 +131,38 @@ with sync_playwright() as p:
     page3.goto(f"{BASE}/about/", wait_until="domcontentloaded")
     check("a public page is left indexable",
           'name="robots" content="noindex, nofollow"' not in page3.content())
+
+    # --- username enumeration ------------------------------------------------
+    anon = browser.new_context(viewport={"width": 1280, "height": 800})
+    apg = anon.new_page()
+
+    try:
+        users_json = urllib.request.urlopen(f"{BASE}/wp-json/wp/v2/users").read().decode()
+        status = 200
+    except urllib.error.HTTPError as e:
+        users_json = e.read().decode()
+        status = e.code
+    check("REST users endpoint closed to strangers",
+          status == 404 and "famadmin" not in users_json and "janet" not in users_json,
+          f"HTTP {status}")
+
+    apg.goto(f"{BASE}/?author=1", wait_until="domcontentloaded")
+    check("?author=1 does not reveal the admin username",
+          "/author/" not in apg.url and "famadmin" not in apg.url, apg.url)
+
+    sm_index = urllib.request.urlopen(f"{BASE}/wp-sitemap.xml").read().decode()
+    check("author pages dropped from the sitemap index", "users" not in sm_index,
+          "leaked" if "users" in sm_index else "clean")
+
+    # A signed-in administrator must still get the endpoint, or the block editor and
+    # Elementor lose the author fields. Checked against the filter itself: a browser
+    # fetch without an X-WP-Nonce counts as anonymous to the REST API whatever cookies
+    # it carries, so it cannot answer this question.
+    kept = php("$u = get_user_by('login','famadmin'); wp_set_current_user($u->ID); "
+               "$e = ['/wp/v2/users' => 1, '/wp/v2/posts' => 1]; "
+               "$e = apply_filters('rest_endpoints', $e); "
+               "echo implode(',', array_keys($e));")
+    check("signed-in admin keeps the users endpoint", "/wp/v2/users" in kept, kept)
 
     # --- the admin help screen ----------------------------------------------
     apage.goto(f"{BASE}/wp-admin/admin.php?page=ffac-help", wait_until="domcontentloaded")

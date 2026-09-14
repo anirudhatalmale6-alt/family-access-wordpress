@@ -23,6 +23,7 @@ class FFAC_Settings {
 			'logout_on_leave'    => 1,     // Log out when they navigate away / close the tab.
 			'remember_username'  => 1,     // Pre-fill the username box for returning members.
 			'require_approval'   => 1,     // New registrations wait for the admin.
+			'harden_login'       => 1,     // Stop WordPress giving the usernames away.
 			'captcha_mode'       => 'builtin', // 'builtin' | 'recaptcha' | 'off'
 			'recaptcha_site'     => '',
 			'recaptcha_secret'   => '',
