@@ -260,6 +260,24 @@
 	transition: transform .12s ease, box-shadow .12s ease;
 }
 
+/* A tile and a button are cards, not sentences, so they must not be underlined.
+ *
+ * Astra (and several other themes) inject an inline rule of the shape
+ * `.ast-single-post .entry-content a { text-decoration: underline }`, which is more
+ * specific than a single class and lands after this file. Repeating the class name
+ * is what out-weighs it — three classes beats two-classes-and-an-element, without
+ * resorting to !important, which would also block the owner from restyling these
+ * in Elementor later. */
+.ffac-tile.ffac-tile.ffac-tile,
+.ffac-tile.ffac-tile.ffac-tile:hover,
+.ffac-tile.ffac-tile.ffac-tile:focus,
+.ffac-tile.ffac-tile.ffac-tile span,
+.ffac-btn.ffac-btn.ffac-btn,
+.ffac-btn.ffac-btn.ffac-btn:hover,
+.ffac-btn.ffac-btn.ffac-btn:focus {
+	text-decoration: none;
+}
+
 .ffac-tile__code {
 	font-weight: 700;
 	font-size: 1.2em;

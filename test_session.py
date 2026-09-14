@@ -88,6 +88,13 @@ with sync_playwright() as p:
     check("admin signed in", "/wp-admin/" in apage.url, apage.url)
 
     apage.goto(f"{BASE}/wp-admin/admin.php?page=ffac-members", wait_until="domcontentloaded")
+    # Wait for the table rather than asserting on the instant: the first dashboard
+    # load after a theme or plugin change can be slow enough to fail a bare count,
+    # which is a red test rather than a real fault.
+    try:
+        apage.wait_for_selector("table.ffac-grid", timeout=20000)
+    except Exception:
+        pass
     check("member access screen loads", apage.locator("table.ffac-grid").count() == 1)
     check("the new registration is listed", "samtaylor" in apage.content())
     apage.screenshot(path=f"{SHOTS}/12-admin-members.png")

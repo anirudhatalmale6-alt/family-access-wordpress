@@ -161,7 +161,7 @@ class FFAC_Access {
 	 * Strip protected pages out of any nav menu the visitor is not allowed to open.
 	 */
 	public static function filter_menu_items( $items, $menu ) {
-		if ( is_admin() || ! is_array( $items ) ) {
+		if ( ! is_array( $items ) || ! self::is_front_end_request() ) {
 			return $items;
 		}
 
@@ -227,7 +227,7 @@ class FFAC_Access {
 	 * navigation of a block theme, a page-list widget, a sitemap block.
 	 */
 	public static function filter_page_list( $pages ) {
-		if ( is_admin() || ! is_array( $pages ) ) {
+		if ( ! is_array( $pages ) || ! self::is_front_end_request() ) {
 			return $pages;
 		}
 
@@ -243,6 +243,27 @@ class FFAC_Access {
 		}
 
 		return array_values( $pages );
+	}
+
+	/**
+	 * Is this a page being rendered for a visitor?
+	 *
+	 * The page-list filter must only touch the front end. WP-CLI, cron and the
+	 * dashboard all have no visitor to judge, and if we hide pages from them we
+	 * break tools the owner relies on — a menu built in the dashboard would come
+	 * out missing the very pages it is supposed to contain.
+	 */
+	protected static function is_front_end_request() {
+		if ( is_admin() || wp_doing_cron() ) {
+			return false;
+		}
+		if ( defined( 'WP_CLI' ) && WP_CLI ) {
+			return false;
+		}
+		if ( ! isset( $_SERVER['REQUEST_METHOD'] ) ) {
+			return false; // No HTTP request at all: a script, an importer, a seeder.
+		}
+		return true;
 	}
 
 	/**

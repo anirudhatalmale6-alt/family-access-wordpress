@@ -74,12 +74,16 @@ see it.
 
 ## Requirements
 
-WordPress 6.0+, PHP 7.4+. No other plugin needed. Tested against WordPress 7.1 with
-Elementor active.
+WordPress 6.0+, PHP 7.4+. No other plugin needed.
+
+Tested against WordPress 7.1 on two very different themes: **Twenty Twenty-Five** (block
+theme, navigation built from `get_pages()`) and **Astra + Elementor + Header Footer
+Elementor** (classic theme, navigation built from a real WordPress menu). Both hide the
+protected pages from the header; the full suite passes on both.
 
 ## Tests
 
-`test_flow.py` and `test_session.py` drive a real browser through the whole thing — 51
+`test_flow.py` and `test_session.py` drive a real browser through the whole thing — 55
 checks covering the guard, the greyed tiles, the robot check, the approval queue, the idle
 timeout, the leave-the-site logout, and the sitemap/noindex handling.
 
