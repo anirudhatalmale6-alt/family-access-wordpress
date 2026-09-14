@@ -74,8 +74,18 @@ class FFAC_Session {
 			return;
 		}
 
-		// Never log an administrator out from under himself while he is working in wp-admin.
-		if ( is_admin() && current_user_can( 'manage_options' ) ) {
+		/*
+		 * The session rules are for members, never for the people who run the site.
+		 *
+		 * This used to bail out only on `is_admin()`, which looks right and is not:
+		 * the moment the owner clicked through to the front of his own site to see
+		 * how a page looked, the member idle timer applied to him and logged him
+		 * out — of the dashboard as well, because it is one session. He would go
+		 * back to wp-admin and be staring at the login screen with no idea why.
+		 *
+		 * Judge the person, not the screen they happen to be on.
+		 */
+		if ( FFAC_Access::is_manager( get_current_user_id() ) ) {
 			return;
 		}
 

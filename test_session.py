@@ -97,6 +97,18 @@ with sync_playwright() as p:
         pass
     loaded = apage.locator("table.ffac-grid").count() == 1
     if not loaded:
+        # Instrumentation: the failure mode is the WordPress login screen, i.e. the
+        # admin session disappeared between signing in and the next request. Record
+        # enough to tell WHY rather than guessing.
+        cookies = {c["name"]: c["value"][:18] for c in apage.context.cookies()}
+        print("      url:", apage.url)
+        print("      cookies:", sorted(cookies))
+        print("      admin meta:", php(
+            "$u=get_user_by('login','famadmin');"
+            "echo 'last_seen=' . (int) get_user_meta($u->ID, FFAC_Session::META_SEEN, true)"
+            ". ' left_at=' . (int) get_user_meta($u->ID, FFAC_Session::META_LEFT, true)"
+            ". ' now=' . time()"
+            ". ' sessions=' . count( (array) get_user_meta($u->ID, 'session_tokens', true) );"))
         # Keep the evidence. This has failed on the first run after a plugin file
         # edit under the PHP built-in server and passed on every run after, which
         # smells like a stale opcode cache rather than a fault in the page.
@@ -145,6 +157,22 @@ with sync_playwright() as p:
     page3.goto(f"{BASE}/about/", wait_until="domcontentloaded")
     check("a public page is left indexable",
           'name="robots" content="noindex, nofollow"' not in page3.content())
+
+    # --- the owner must never be logged out by the member session rules -------
+    # This one is here because it actually happened: the idle rule bailed out on
+    # is_admin() alone, so viewing the front of his own site signed the owner out
+    # of the dashboard as well.
+    php("$u=get_user_by('login','famadmin'); "
+        "update_user_meta($u->ID, FFAC_Session::META_SEEN, time()-7200); "
+        "update_user_meta($u->ID, FFAC_Session::META_LEFT, time()-7200); echo 'aged';")
+
+    apage.goto(f"{BASE}/members-menu/", wait_until="domcontentloaded")
+    check("owner browsing the front end is not signed out",
+          "/login/" not in apage.url, apage.url)
+
+    apage.goto(f"{BASE}/wp-admin/admin.php?page=ffac-members", wait_until="domcontentloaded")
+    check("owner still has his dashboard afterwards",
+          apage.locator("table.ffac-grid").count() == 1, apage.url)
 
     # --- page caching ---------------------------------------------------------
     # A cached login page eventually serves a stale security token and nobody can

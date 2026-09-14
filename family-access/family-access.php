@@ -60,7 +60,9 @@ register_deactivation_hook( __FILE__, array( 'FFAC_Install', 'deactivate' ) );
 function ffac_front_assets() {
 	wp_enqueue_style( 'ffac', FFAC_URL . 'assets/ffac.css', array(), FFAC_VERSION );
 
-	if ( ! is_user_logged_in() ) {
+	// The session watchdog is for members. Sending the owner's browser a
+	// "log me out when I leave" beacon would end his dashboard session too.
+	if ( ! is_user_logged_in() || FFAC_Access::is_manager( get_current_user_id() ) ) {
 		return;
 	}
 
